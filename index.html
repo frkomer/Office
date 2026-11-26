@@ -53,11 +53,12 @@ Write-Host "4 - Clean Install        (Temiz kurulum - Eskisini kaldir ve kur)" -
 Write-Host "5 - Activate Only        (Sadece etkinlestir)" -ForegroundColor Yellow
 Write-Host "6 - License Status Check (Lisans durumunu kontrol et)" -ForegroundColor Yellow
 Write-Host "7 - Clear Cache          (Onbellegi ve gecici dosyalari temizle)" -ForegroundColor Yellow
+Write-Host "8 - Offline Install      (USB veya diskten cevrimdisi kur)" -ForegroundColor Yellow
 Write-Host ""
 
-$islem = Read-Host "Select Option / Islem Secin (1-7)"
+$islem = Read-Host "Select Option / Islem Secin (1-8)"
 
-if ($islem -notin @("1", "2", "3", "4", "5", "6", "7")) {
+if ($islem -notin @("1", "2", "3", "4", "5", "6", "7", "8")) {
     Write-Host "Invalid selection / Gecersiz secim yaptiniz." -ForegroundColor Red
     Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
     return
@@ -81,7 +82,27 @@ if ($islem -eq "7") {
     return
 }
 
-if ($islem -in @("1", "2", "4")) {
+$kaynakYol = "C:\Office"
+if ($islem -eq "8") {
+    $bulundu = $false
+    $suruculer = Get-PSDrive -PSProvider FileSystem | Select-Object -ExpandProperty Root
+    foreach ($drv in $suruculer) {
+        $adayYol = Join-Path $drv "Office"
+        if (Test-Path (Join-Path $adayYol "Office\Data")) {
+            $kaynakYol = $adayYol
+            $bulundu = $true
+            Write-Host "Offline setup files found at: $kaynakYol / Kurulum dosyalari bulundu: $kaynakYol" -ForegroundColor Green
+            break
+        }
+    }
+    if (-not $bulundu) {
+        Write-Host "ERROR: Office folder not found on USB or C: drive! / HATA: USB bellekte veya C: diskinde Office klasoru bulunamadi!" -ForegroundColor Red
+        Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
+        return
+    }
+}
+
+if ($islem -in @("1", "2", "4", "8")) {
     Write-Host ""
     Write-Host "1 - Office 2024 LTSC" -ForegroundColor Yellow
     Write-Host "2 - Office 2021 LTSC" -ForegroundColor Yellow
@@ -129,16 +150,22 @@ if ($islem -in @("1", "2", "4")) {
         return
     }
 }
-New-Item -ItemType Directory -Force -Path "C:\Office" | Out-Null
+            New-Item -ItemType Directory -Force -Path "C:\Office" | Out-Null
 Set-Location "C:\Office"
 
-Write-Host "Preparing Office Deployment Tool (ODT) / Kurulum araci hazirlaniyor..." -ForegroundColor Cyan
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+if (Test-Path "$kaynakYol\setup.exe") {
+    Copy-Item "$kaynakYol\setup.exe" -Destination "C:\Office\setup.exe" -Force
+}
 
-if (Test-Path "$env:ProgramFiles\OfficeDeploymentTool\setup.exe") {
-    Copy-Item "$env:ProgramFiles\OfficeDeploymentTool\setup.exe" -Destination "C:\Office\setup.exe" -Force
-} elseif (Test-Path "${env:ProgramFiles(x86)}\OfficeDeploymentTool\setup.exe") {
-    Copy-Item "${env:ProgramFiles(x86)}\OfficeDeploymentTool\setup.exe" -Destination "C:\Office\setup.exe" -Force
+if (-not (Test-Path "C:\Office\setup.exe")) {
+    Write-Host "Preparing Office Deployment Tool (ODT) / Kurulum araci hazirlaniyor..." -ForegroundColor Cyan
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+    if (Test-Path "$env:ProgramFiles\OfficeDeploymentTool\setup.exe") {
+        Copy-Item "$env:ProgramFiles\OfficeDeploymentTool\setup.exe" -Destination "C:\Office\setup.exe" -Force
+    } elseif (Test-Path "${env:ProgramFiles(x86)}\OfficeDeploymentTool\setup.exe") {
+        Copy-Item "${env:ProgramFiles(x86)}\OfficeDeploymentTool\setup.exe" -Destination "C:\Office\setup.exe" -Force
+    }
 }
 
 if (-not (Test-Path "C:\Office\setup.exe")) {
@@ -180,7 +207,7 @@ $kaldirSatirlar = @(
 if ($islem -in @("1", "2")) {
     $kurSatirlar = @(
         $o + 'Configuration' + $c,
-        $o + 'Add OfficeClientEdition="64" Channel="' + $channel + '" SourcePath="C:\Office" AllowCdnFallback="TRUE"' + $c,
+        $o + 'Add OfficeClientEdition="64" Channel="' + $channel + '" SourcePath="' + $kaynakYol + '" AllowCdnFallback="TRUE"' + $c,
         $o + 'Product ID="' + $productId + '"' + $c,
         $o + 'Language ID="' + $langId + '" /' + $c,
         $excludeXml,
@@ -192,12 +219,12 @@ if ($islem -in @("1", "2")) {
         $o + '/Configuration' + $c
     )
     ($kurSatirlar -join [Environment]::NewLine) | Out-File -FilePath "C:\Office\configuration.xml" -Encoding UTF8
-} elseif ($islem -eq "4") {
+} elseif ($islem -in @("4", "8")) {
     $temizKurSatirlar = @(
         $o + 'Configuration' + $c,
         $o + 'Remove All="TRUE" /' + $c,
         $o + 'RemoveMSI /' + $c,
-        $o + 'Add OfficeClientEdition="64" Channel="' + $channel + '" SourcePath="C:\Office" AllowCdnFallback="TRUE"' + $c,
+        $o + 'Add OfficeClientEdition="64" Channel="' + $channel + '" SourcePath="' + $kaynakYol + '" AllowCdnFallback="TRUE"' + $c,
         $o + 'Product ID="' + $productId + '"' + $c,
         $o + 'Language ID="' + $langId + '" /' + $c,
         $excludeXml,
@@ -230,9 +257,13 @@ if ($islem -eq "1") {
     Write-Host "Step 2/2: Removing old & installing Office $surum silently / Eskisi kaldirilip kuruluyor..." -ForegroundColor Green
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/configure C:\Office\configuration.xml" -Wait
     Write-Host "All tasks completed! / Tum islemler basariyla tamamlandi!" -ForegroundColor Green
+} elseif ($islem -eq "8") {
+    Write-Host "Offline Install: Removing old & installing Office $surum ($langId) from $kaynakYol / Cevrimdisi kuruluyor..." -ForegroundColor Green
+    Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/configure C:\Office\configuration.xml" -Wait
+    Write-Host "Offline installation complete! / Cevrimdisi kurulum basariyla tamamlandi!" -ForegroundColor Green
 }
 
-if ($islem -in @("2", "4")) {
+if ($islem -in @("2", "4", "8")) {
     Write-Host ""
     $etkinlestir = Read-Host "Activate with Product Key / Urun anahtari ile etkinlestir? (E / H)"
     if ($etkinlestir -in @("E", "e", "Y", "y")) {
@@ -246,5 +277,4 @@ if ($islem -in @("2", "4")) {
 }
 
 Set-Location "C:\"
-Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"          
-
+Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
