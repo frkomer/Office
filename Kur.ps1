@@ -31,33 +31,41 @@ Write-Host ""
 $islem = Read-Host "Select Option / Islem Secin (1, 2, 3, 4, 5)"
 
 if ($islem -notin @("1", "2", "3", "4", "5")) {
-    Write-Host "Invalid selection / Gecersiz secim yaptiniz. (1, 2, 3, 4, 5)" -ForegroundColor Red
-    exit
+    Write-Host "Invalid selection / Gecersiz secim yaptiniz." -ForegroundColor Red
+    Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
+    return
 }
 
 if ($islem -eq "5") {
     Etkinlestir-Office
-    exit
+    Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
+    return
 }
 
 if ($islem -in @("1", "2", "4")) {
-    $surum = Read-Host "Select Version / Surum Secin (2024 / 2021)"
-    if ($surum -eq "2024") {
+    Write-Host ""
+    Write-Host "1 - Office 2024 LTSC" -ForegroundColor Yellow
+    Write-Host "2 - Office 2021 LTSC" -ForegroundColor Yellow
+    $surumSecim = Read-Host "Select Version / Surum Secin (1 veya 2)"
+    if ($surumSecim -eq "1") {
+        $surum = "2024"
         $productId = "ProPlus2024Volume"
         $channel = "PerpetualVL2024"
-    } elseif ($surum -eq "2021") {
+    } elseif ($surumSecim -eq "2") {
+        $surum = "2021"
         $productId = "ProPlus2021Volume"
         $channel = "PerpetualVL2021"
     } else {
-        Write-Host "Invalid version / Gecersiz surum secimi. (2024 / 2021)" -ForegroundColor Red
-        exit
+        Write-Host "Invalid version / Gecersiz surum secimi." -ForegroundColor Red
+        Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
+        return
     }
 }
 
 New-Item -ItemType Directory -Force -Path "C:\Office" | Out-Null
 Set-Location "C:\Office"
 
-Write-Host "Preparing Office Deployment Tool (ODT) / Kurulum araci hazirlaniyor..." -ForegroundColor Cyan
+Write-Host "Downloading Office Deployment Tool (ODT) / Kurulum araci indiriliyor..." -ForegroundColor Cyan
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $odtUrls = @(
@@ -69,30 +77,35 @@ $odtUrls = @(
 $indirildi = $false
 foreach ($url in $odtUrls) {
     try {
-        Invoke-WebRequest -Uri $url -OutFile "C:\Office\odt.exe" -UseBasicParsing -UserAgent "Mozilla/5.0" -ErrorAction Stop
-        $bytes = [System.IO.File]::ReadAllBytes("C:\Office\odt.exe")
-        if ($bytes.Length -gt 1000000 -and $bytes[0] -eq 77 -and $bytes[1] -eq 90) {
-            $indirildi = $true
-            break
+        Invoke-WebRequest -Uri $url -OutFile "C:\Office\odt.exe" -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -ErrorAction Stop
+        if (Test-Path "C:\Office\odt.exe") {
+            $bytes = [System.IO.File]::ReadAllBytes("C:\Office\odt.exe")
+            if ($bytes.Length -gt 1000000 -and $bytes[0] -eq 77 -and $bytes[1] -eq 90) {
+                $indirildi = $true
+                break
+            }
         }
     } catch {}
 }
 
 if (-not $indirildi) {
-    Write-Host "Trying Winget fallback / Winget ile arac indiriliyor..." -ForegroundColor Yellow
-    winget install --id Microsoft.OfficeDeploymentTool --accept-source-agreements --accept-package-agreements --silent | Out-Null
-    $wingetSetup = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter "setup.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($wingetSetup) {
-        Copy-Item $wingetSetup.FullName -Destination "C:\Office\setup.exe" -Force
-        $indirildi = $true
+    Write-Host "Trying Winget / Winget ile arac indiriliyor..." -ForegroundColor Yellow
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        winget install --id Microsoft.OfficeDeploymentTool --accept-source-agreements --accept-package-agreements --silent
+        $wingetSetup = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter "setup.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($wingetSetup) {
+            Copy-Item $wingetSetup.FullName -Destination "C:\Office\setup.exe" -Force
+            $indirildi = $true
+        }
     }
 } else {
     Start-Process -FilePath "C:\Office\odt.exe" -ArgumentList "/quiet /extract:C:\Office" -Wait
 }
 
 if (-not (Test-Path "C:\Office\setup.exe")) {
-    Write-Host "ERROR: setup.exe could not be downloaded. Check internet connection. / HATA: Kurulum araci indirilemedi." -ForegroundColor Red
-    exit
+    Write-Host "ERROR: setup.exe could not be downloaded! / HATA: Kurulum araci indirilemedi!" -ForegroundColor Red
+    Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
+    return
 }
 
 $kaldirXml = @"
@@ -165,3 +178,5 @@ if ($islem -in @("2", "4")) {
         Etkinlestir-Office
     }
 }
+
+Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
