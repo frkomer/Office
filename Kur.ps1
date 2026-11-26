@@ -1,19 +1,19 @@
-Write-Host "=== OFFICE YONETIM VE KURULUM ARACI ===" -ForegroundColor Cyan
-Write-Host "1 - Sadece indir" -ForegroundColor Yellow
-Write-Host "2 - Sadece indir kur" -ForegroundColor Yellow
-Write-Host "3 - Sadece kaldir" -ForegroundColor Yellow
-Write-Host "4 - Eskisi varsa kaldir yenisini indir kur (Arka planda)" -ForegroundColor Yellow
+Write-Host "=== OFFICE SETUP & MANAGEMENT TOOL ===" -ForegroundColor Cyan
+Write-Host "1 - Download Only      (Sadece indir)" -ForegroundColor Yellow
+Write-Host "2 - Download & Install (Sadece indir kur)" -ForegroundColor Yellow
+Write-Host "3 - Uninstall Only     (Sadece kaldir)" -ForegroundColor Yellow
+Write-Host "4 - Clean Install      (Eskisi varsa kaldir yenisini indir kur)" -ForegroundColor Yellow
 Write-Host ""
 
-$islem = Read-Host "Yapmak istediginiz islemi secin (1, 2, 3 veya 4)"
+$islem = Read-Host "Select Option / Islem Secin (1, 2, 3, 4)"
 
 if ($islem -notin @("1", "2", "3", "4")) {
-    Write-Host "Gecersiz secim yaptiniz. Lutfen 1, 2, 3 veya 4 yazin." -ForegroundColor Red
+    Write-Host "Invalid selection / Gecersiz secim yaptiniz. (1, 2, 3, 4)" -ForegroundColor Red
     exit
 }
 
 if ($islem -in @("1", "2", "4")) {
-    $surum = Read-Host "Kurmak veya indirmek istediginiz surumu secin (2024 veya 2021 yazin)"
+    $surum = Read-Host "Select Version / Surum Secin (2024 / 2021)"
     if ($surum -eq "2024") {
         $productId = "ProPlus2024Volume"
         $channel = "PerpetualVL2024"
@@ -21,7 +21,7 @@ if ($islem -in @("1", "2", "4")) {
         $productId = "ProPlus2021Volume"
         $channel = "PerpetualVL2021"
     } else {
-        Write-Host "Gecersiz surum secimi. Lutfen 2024 veya 2021 yazin." -ForegroundColor Red
+        Write-Host "Invalid version / Gecersiz surum secimi. (2024 / 2021)" -ForegroundColor Red
         exit
     }
 }
@@ -29,7 +29,7 @@ if ($islem -in @("1", "2", "4")) {
 New-Item -ItemType Directory -Force -Path "C:\Office" | Out-Null
 Set-Location "C:\Office"
 
-Write-Host "Guncel Office Dagitim Araci (ODT) baglantisi bulunuyor..." -ForegroundColor Cyan
+Write-Host "Finding latest Office Deployment Tool (ODT) / Guncel arac bulunuyor..." -ForegroundColor Cyan
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $sayfa = Invoke-WebRequest -Uri "https://microsoft.com" -UseBasicParsing
 $eslesme = [regex]::Match($sayfa.Content, 'https://download\.microsoft\.com/download/[^"''\s]+officedeploymenttool[^"''\s]+\.exe')
@@ -40,7 +40,7 @@ if ($eslesme.Success) {
     $odtUrl = "https://microsoft.com"
 }
 
-Write-Host "Office Dagitim Araci indiriliyor..." -ForegroundColor Cyan
+Write-Host "Downloading ODT / Office Dagitim Araci indiriliyor..." -ForegroundColor Cyan
 Invoke-WebRequest -Uri $odtUrl -OutFile "C:\Office\odt.exe" -UseBasicParsing
 Start-Process -FilePath "C:\Office\odt.exe" -ArgumentList "/quiet /extract:C:\Office" -Wait
 
@@ -86,23 +86,41 @@ if ($islem -in @("1", "2")) {
 }
 
 if ($islem -eq "1") {
-    Write-Host "Office $surum dosyalari C:\Office klasorune indiriliyor (Lutfen bekleyin)..." -ForegroundColor Green
+    Write-Host "Downloading Office $surum to C:\Office / Dosyalar indiriliyor..." -ForegroundColor Green
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/download C:\Office\configuration.xml" -Wait
-    Write-Host "Indirme tamamlandi! Tum dosyalar C:\Office klasorunde hazir." -ForegroundColor Green
+    Write-Host "Download complete! / Indirme tamamlandi! (C:\Office)" -ForegroundColor Green
 } elseif ($islem -eq "2") {
-    Write-Host "Adim 1/2: Office $surum dosyalari C:\Office klasorune indiriliyor..." -ForegroundColor Green
+    Write-Host "Step 1/2: Downloading Office $surum / Dosyalar indiriliyor..." -ForegroundColor Green
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/download C:\Office\configuration.xml" -Wait
-    Write-Host "Adim 2/2: Kurulum baslatiliyor..." -ForegroundColor Green
+    Write-Host "Step 2/2: Installing Office $surum / Kurulum baslatiliyor..." -ForegroundColor Green
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/configure C:\Office\configuration.xml" -Wait
-    Write-Host "Kurulum tamamlandi!" -ForegroundColor Green
+    Write-Host "Installation complete! / Kurulum tamamlandi!" -ForegroundColor Green
 } elseif ($islem -eq "3") {
-    Write-Host "Bilgisayardaki tum Office surumleri arka planda kaldiriliyor..." -ForegroundColor Yellow
+    Write-Host "Uninstalling all Office versions / Tum surumler arka planda kaldiriliyor..." -ForegroundColor Yellow
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/configure C:\Office\remove.xml" -Wait
-    Write-Host "Kaldirma islemi tamamlandi!" -ForegroundColor Green
+    Write-Host "Uninstall complete! / Kaldirma islemi tamamlandi!" -ForegroundColor Green
 } elseif ($islem -eq "4") {
-    Write-Host "Adim 1/2: Office $surum dosyalari C:\Office klasorune indiriliyor..." -ForegroundColor Green
+    Write-Host "Step 1/2: Downloading Office $surum / Dosyalar indiriliyor..." -ForegroundColor Green
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/download C:\Office\configuration.xml" -Wait
-    Write-Host "Adim 2/2: Eskisi kaldirilip Office $surum arka planda kuruluyor (Lutfen bekleyin)..." -ForegroundColor Green
+    Write-Host "Step 2/2: Removing old & installing Office $surum silently / Eskisi kaldirilip kuruluyor..." -ForegroundColor Green
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/configure C:\Office\configuration.xml" -Wait
-    Write-Host "Tum islemler basariyla tamamlandi!" -ForegroundColor Green
+    Write-Host "All tasks completed! / Tum islemler basariyla tamamlandi!" -ForegroundColor Green
+}
+
+if ($islem -in @("2", "4")) {
+    Write-Host ""
+    Write-Host "=== ACTIVATION / ETKINLESTIRME ===" -ForegroundColor Cyan
+    $etkinlestir = Read-Host "Activate with Product Key / Urun anahtari ile etkinlestir? (E / H)"
+    if ($etkinlestir -in @("E", "e", "Y", "y")) {
+        $key = Read-Host "Enter 25-character Product Key / 25 haneli urun anahtarini girin (XXXXX-XXXXX-XXXXX-XXXXX-XXXXX)"
+        $osppPath = "C:\Program Files\Microsoft Office\Office16\ospp.vbs"
+        if (Test-Path $osppPath) {
+            Write-Host "Installing product key / Urun anahtari yukleniyor..." -ForegroundColor Cyan
+            cscript //nologo $osppPath /inpkey:$key
+            Write-Host "Activating Office online / Cevrimici etkinlestiriliyor..." -ForegroundColor Cyan
+            cscript //nologo $osppPath /act
+        } else {
+            Write-Host "ospp.vbs not found / Etkinlestirme araci bulunamadi." -ForegroundColor Red
+        }
+    }
 }
