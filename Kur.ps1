@@ -57,20 +57,9 @@ if ($islem -in @("1", "2", "4")) {
 New-Item -ItemType Directory -Force -Path "C:\Office" | Out-Null
 Set-Location "C:\Office"
 
-Write-Host "Finding latest Office Deployment Tool (ODT) / Guncel arac bulunuyor..." -ForegroundColor Cyan
+Write-Host "Downloading Office Setup Engine / Kurulum motoru indiriliyor..." -ForegroundColor Cyan
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$sayfa = Invoke-WebRequest -Uri "https://microsoft.com" -UseBasicParsing
-$eslesme = [regex]::Match($sayfa.Content, 'https://download\.microsoft\.com/download/[^"''\s]+officedeploymenttool[^"''\s]+\.exe')
-
-if ($eslesme.Success) {
-    $odtUrl = $eslesme.Value
-} else {
-    $odtUrl = "https://microsoft.com"
-}
-
-Write-Host "Downloading ODT / Office Dagitim Araci indiriliyor..." -ForegroundColor Cyan
-Invoke-WebRequest -Uri $odtUrl -OutFile "C:\Office\odt.exe" -UseBasicParsing
-Start-Process -FilePath "C:\Office\odt.exe" -ArgumentList "/quiet /extract:C:\Office" -Wait
+Invoke-WebRequest -Uri "https://microsoft.com" -OutFile "C:\Office\setup.exe" -UseBasicParsing
 
 $kaldirXml = @"
 <Configuration>
