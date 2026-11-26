@@ -129,7 +129,7 @@ if ($islem -in @("1", "2", "4")) {
         return
     }
 }
-            New-Item -ItemType Directory -Force -Path "C:\Office" | Out-Null
+New-Item -ItemType Directory -Force -Path "C:\Office" | Out-Null
 Set-Location "C:\Office"
 
 Write-Host "Preparing Office Deployment Tool (ODT) / Kurulum araci hazirlaniyor..." -ForegroundColor Cyan
@@ -168,46 +168,46 @@ $o = [char]60
 $c = [char]62
 
 $kaldirSatirlar = @(
-    "${o}Configuration${c}",
-    "${o}Remove All="TRUE" /${c}",
-    "${o}RemoveMSI /${c}",
-    "${o}Display Level="None" AcceptEULA="TRUE" /${c}",
-    "${o}Property Name="FORCEAPPSHUTDOWN" Value="TRUE" /${c}",
-    "${o}/Configuration${c}"
+    $o + 'Configuration' + $c,
+    $o + 'Remove All="TRUE" /' + $c,
+    $o + 'RemoveMSI /' + $c,
+    $o + 'Display Level="None" AcceptEULA="TRUE" /' + $c,
+    $o + 'Property Name="FORCEAPPSHUTDOWN" Value="TRUE" /' + $c,
+    $o + '/Configuration' + $c
 )
-($kaldirSatirlar -join "`r`n") | Out-File -FilePath "C:\Office\remove.xml" -Encoding UTF8
+($kaldirSatirlar -join [Environment]::NewLine) | Out-File -FilePath "C:\Office\remove.xml" -Encoding UTF8
 
 if ($islem -in @("1", "2")) {
     $kurSatirlar = @(
-        "${o}Configuration${c}",
-        "${o}Add OfficeClientEdition="64" Channel="$channel" SourcePath="C:\Office" AllowCdnFallback="TRUE"${c}",
-        "${o}Product ID="$productId"${c}",
-        "${o}Language ID="$langId" /${c}",
+        $o + 'Configuration' + $c,
+        $o + 'Add OfficeClientEdition="64" Channel="' + $channel + '" SourcePath="C:\Office" AllowCdnFallback="TRUE"' + $c,
+        $o + 'Product ID="' + $productId + '"' + $c,
+        $o + 'Language ID="' + $langId + '" /' + $c,
         $excludeXml,
-        "${o}/Product${c}",
-        "${o}/Add${c}",
-        "${o}RemoveMSI /${c}",
-        "${o}Display Level="Full" AcceptEULA="TRUE" /${c}",
-        "${o}Property Name="FORCEAPPSHUTDOWN" Value="TRUE" /${c}",
-        "${o}/Configuration${c}"
+        $o + '/Product' + $c,
+        $o + '/Add' + $c,
+        $o + 'RemoveMSI /' + $c,
+        $o + 'Display Level="Full" AcceptEULA="TRUE" /' + $c,
+        $o + 'Property Name="FORCEAPPSHUTDOWN" Value="TRUE" /' + $c,
+        $o + '/Configuration' + $c
     )
-    ($kurSatirlar -join "`r`n") | Out-File -FilePath "C:\Office\configuration.xml" -Encoding UTF8
+    ($kurSatirlar -join [Environment]::NewLine) | Out-File -FilePath "C:\Office\configuration.xml" -Encoding UTF8
 } elseif ($islem -eq "4") {
     $temizKurSatirlar = @(
-        "${o}Configuration${c}",
-        "${o}Remove All="TRUE" /${c}",
-        "${o}RemoveMSI /${c}",
-        "${o}Add OfficeClientEdition="64" Channel="$channel" SourcePath="C:\Office" AllowCdnFallback="TRUE"${c}",
-        "${o}Product ID="$productId"${c}",
-        "${o}Language ID="$langId" /${c}",
+        $o + 'Configuration' + $c,
+        $o + 'Remove All="TRUE" /' + $c,
+        $o + 'RemoveMSI /' + $c,
+        $o + 'Add OfficeClientEdition="64" Channel="' + $channel + '" SourcePath="C:\Office" AllowCdnFallback="TRUE"' + $c,
+        $o + 'Product ID="' + $productId + '"' + $c,
+        $o + 'Language ID="' + $langId + '" /' + $c,
         $excludeXml,
-        "${o}/Product${c}",
-        "${o}/Add${c}",
-        "${o}Display Level="None" AcceptEULA="TRUE" /${c}",
-        "${o}Property Name="FORCEAPPSHUTDOWN" Value="TRUE" /${c}",
-        "${o}/Configuration${c}"
+        $o + '/Product' + $c,
+        $o + '/Add' + $c,
+        $o + 'Display Level="None" AcceptEULA="TRUE" /' + $c,
+        $o + 'Property Name="FORCEAPPSHUTDOWN" Value="TRUE" /' + $c,
+        $o + '/Configuration' + $c
     )
-    ($temizKurSatirlar -join "`r`n") | Out-File -FilePath "C:\Office\configuration.xml" -Encoding UTF8
+    ($temizKurSatirlar -join [Environment]::NewLine) | Out-File -FilePath "C:\Office\configuration.xml" -Encoding UTF8
 }
 
 if ($islem -eq "1") {
@@ -246,4 +246,5 @@ if ($islem -in @("2", "4")) {
 }
 
 Set-Location "C:\"
-Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
+Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"          
+
