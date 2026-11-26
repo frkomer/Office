@@ -20,17 +20,44 @@ function Etkinlestir-Office {
     }
 }
 
+function Lisans-Kontrol {
+    Write-Host ""
+    Write-Host "=== LICENSE STATUS / LISANS DURUMU ===" -ForegroundColor Cyan
+    $osppPath = "C:\Program Files\Microsoft Office\Office16\ospp.vbs"
+    if (-not (Test-Path $osppPath)) {
+        $osppPath = "C:\Program Files (x86)\Microsoft Office\Office16\ospp.vbs"
+    }
+    if (Test-Path $osppPath) {
+        cscript //nologo $osppPath /dstatus
+    } else {
+        Write-Host "Office not installed / Bilgisayarda yuklu Office bulunamadi." -ForegroundColor Red
+    }
+}
+
+function Onbellek-Temizle {
+    Write-Host ""
+    Set-Location "C:\"
+    if (Test-Path "C:\Office") {
+        Remove-Item -Path "C:\Office" -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host "Cache cleared! / C:\Office gecici kurulum dosyalari tamamen silindi." -ForegroundColor Green
+    } else {
+        Write-Host "No cache found! / Silinecek C:\Office klasoru bulunamadi." -ForegroundColor Yellow
+    }
+}
+
 Write-Host "=== OFFICE SETUP & MANAGEMENT TOOL ===" -ForegroundColor Cyan
-Write-Host "1 - Download Only      (Sadece indir)" -ForegroundColor Yellow
-Write-Host "2 - Download & Install (Sadece indir kur)" -ForegroundColor Yellow
-Write-Host "3 - Uninstall Only     (Sadece kaldir)" -ForegroundColor Yellow
-Write-Host "4 - Clean Install      (Temiz kurulum - Eskisini kaldir ve kur)" -ForegroundColor Yellow
-Write-Host "5 - Activate Only      (Sadece etkinlestir)" -ForegroundColor Yellow
+Write-Host "1 - Download Only        (Sadece indir)" -ForegroundColor Yellow
+Write-Host "2 - Download & Install   (Sadece indir kur)" -ForegroundColor Yellow
+Write-Host "3 - Uninstall Only       (Sadece kaldir)" -ForegroundColor Yellow
+Write-Host "4 - Clean Install        (Temiz kurulum - Eskisini kaldir ve kur)" -ForegroundColor Yellow
+Write-Host "5 - Activate Only        (Sadece etkinlestir)" -ForegroundColor Yellow
+Write-Host "6 - License Status Check (Lisans durumunu kontrol et)" -ForegroundColor Yellow
+Write-Host "7 - Clear Cache          (Onbellegi ve gecici dosyalari temizle)" -ForegroundColor Yellow
 Write-Host ""
 
-$islem = Read-Host "Select Option / Islem Secin (1, 2, 3, 4, 5)"
+$islem = Read-Host "Select Option / Islem Secin (1-7)"
 
-if ($islem -notin @("1", "2", "3", "4", "5")) {
+if ($islem -notin @("1", "2", "3", "4", "5", "6", "7")) {
     Write-Host "Invalid selection / Gecersiz secim yaptiniz." -ForegroundColor Red
     Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
     return
@@ -38,6 +65,18 @@ if ($islem -notin @("1", "2", "3", "4", "5")) {
 
 if ($islem -eq "5") {
     Etkinlestir-Office
+    Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
+    return
+}
+
+if ($islem -eq "6") {
+    Lisans-Kontrol
+    Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
+    return
+}
+
+if ($islem -eq "7") {
+    Onbellek-Temizle
     Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
     return
 }
@@ -57,6 +96,42 @@ if ($islem -in @("1", "2", "4")) {
         $channel = "PerpetualVL2021"
     } else {
         Write-Host "Invalid version / Gecersiz surum secimi." -ForegroundColor Red
+        Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
+        return
+    }
+
+    Write-Host ""
+    Write-Host "1 - Full Package (Tam Paket - Tum Uygulamalar)" -ForegroundColor Yellow
+    Write-Host "2 - Core Apps    (Temel Uygulamalar - Word, Excel, PowerPoint)" -ForegroundColor Yellow
+    $paketSecim = Read-Host "Select Package / Paket Secin (1 veya 2)"
+    if ($paketSecim -eq "1") {
+        $excludeXml = ""
+    } elseif ($paketSecim -eq "2") {
+        $excludeXml = @"
+      <ExcludeApp ID="Access" />
+      <ExcludeApp ID="Lync" />
+      <ExcludeApp ID="OneDrive" />
+      <ExcludeApp ID="OneNote" />
+      <ExcludeApp ID="Outlook" />
+      <ExcludeApp ID="Publisher" />
+      <ExcludeApp ID="Teams" />
+"@
+    } else {
+        Write-Host "Invalid package / Gecersiz paket secimi." -ForegroundColor Red
+        Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
+        return
+    }
+
+    Write-Host ""
+    Write-Host "1 - Turkish  (Turkce - tr-tr)" -ForegroundColor Yellow
+    Write-Host "2 - English  (Ingilizce - en-us)" -ForegroundColor Yellow
+    $dilSecim = Read-Host "Select Language / Dil Secin (1 veya 2)"
+    if ($dilSecim -eq "1") {
+        $langId = "tr-tr"
+    } elseif ($dilSecim -eq "2") {
+        $langId = "en-us"
+    } else {
+        Write-Host "Invalid language / Gecersiz dil secimi." -ForegroundColor Red
         Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
         return
     }
@@ -112,7 +187,8 @@ if ($islem -in @("1", "2")) {
 <Configuration>
   <Add OfficeClientEdition="64" Channel="$channel" SourcePath="C:\Office" AllowCdnFallback="TRUE">
     <Product ID="$productId">
-      <Language ID="tr-tr" />
+      <Language ID="$langId" />
+$excludeXml
     </Product>
   </Add>
   <RemoveMSI />
@@ -128,7 +204,8 @@ if ($islem -in @("1", "2")) {
   <RemoveMSI />
   <Add OfficeClientEdition="64" Channel="$channel" SourcePath="C:\Office" AllowCdnFallback="TRUE">
     <Product ID="$productId">
-      <Language ID="tr-tr" />
+      <Language ID="$langId" />
+$excludeXml
     </Product>
   </Add>
   <Display Level="None" AcceptEULA="TRUE" />
@@ -139,11 +216,11 @@ if ($islem -in @("1", "2")) {
 }
 
 if ($islem -eq "1") {
-    Write-Host "Downloading Office $surum to C:\Office / Dosyalar indiriliyor..." -ForegroundColor Green
+    Write-Host "Downloading Office $surum ($langId) to C:\Office / Dosyalar indiriliyor..." -ForegroundColor Green
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/download C:\Office\configuration.xml" -Wait
     Write-Host "Download complete! / Indirme tamamlandi! (C:\Office)" -ForegroundColor Green
 } elseif ($islem -eq "2") {
-    Write-Host "Step 1/2: Downloading Office $surum / Dosyalar indiriliyor..." -ForegroundColor Green
+    Write-Host "Step 1/2: Downloading Office $surum ($langId) / Dosyalar indiriliyor..." -ForegroundColor Green
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/download C:\Office\configuration.xml" -Wait
     Write-Host "Step 2/2: Installing Office $surum / Kurulum baslatiliyor..." -ForegroundColor Green
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/configure C:\Office\configuration.xml" -Wait
@@ -153,19 +230,5 @@ if ($islem -eq "1") {
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/configure C:\Office\remove.xml" -Wait
     Write-Host "Uninstall complete! / Kaldirma islemi tamamlandi!" -ForegroundColor Green
 } elseif ($islem -eq "4") {
-    Write-Host "Step 1/2: Downloading Office $surum / Dosyalar indiriliyor..." -ForegroundColor Green
+    Write-Host "Step 1/2: Downloading Office $surum ($langId) / Dosyalar indiriliyor..." -ForegroundColor Green
     Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/download C:\Office\configuration.xml" -Wait
-    Write-Host "Step 2/2: Removing old & installing Office $surum silently / Eskisi kaldirilip kuruluyor..." -ForegroundColor Green
-    Start-Process -FilePath "C:\Office\setup.exe" -ArgumentList "/configure C:\Office\configuration.xml" -Wait
-    Write-Host "All tasks completed! / Tum islemler basariyla tamamlandi!" -ForegroundColor Green
-}
-
-if ($islem -in @("2", "4")) {
-    Write-Host ""
-    $etkinlestir = Read-Host "Activate with Product Key / Urun anahtari ile etkinlestir? (E / H)"
-    if ($etkinlestir -in @("E", "e", "Y", "y")) {
-        Etkinlestir-Office
-    }
-}
-
-Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
