@@ -1,14 +1,42 @@
+function Etkinlestir-Office {
+    Write-Host ""
+    Write-Host "=== ACTIVATION / ETKINLESTIRME ===" -ForegroundColor Cyan
+    $key = Read-Host "Enter 25-character Product Key / 25 haneli urun anahtarini girin (XXXXX-XXXXX-XXXXX-XXXXX-XXXXX)"
+    if ([string]::IsNullOrWhiteSpace($key)) {
+        Write-Host "No product key entered / Urun anahtari girilmedi, islem sonlandirildi." -ForegroundColor Yellow
+        return
+    }
+    $osppPath = "C:\Program Files\Microsoft Office\Office16\ospp.vbs"
+    if (-not (Test-Path $osppPath)) {
+        $osppPath = "C:\Program Files (x86)\Microsoft Office\Office16\ospp.vbs"
+    }
+    if (Test-Path $osppPath) {
+        Write-Host "Installing product key / Urun anahtari yukleniyor..." -ForegroundColor Cyan
+        cscript //nologo $osppPath /inpkey:$key
+        Write-Host "Activating Office online / Cevrimici etkinlestiriliyor..." -ForegroundColor Cyan
+        cscript //nologo $osppPath /act
+    } else {
+        Write-Host "ospp.vbs not found / Office kurulu degil veya etkinlestirme araci bulunamadi." -ForegroundColor Red
+    }
+}
+
 Write-Host "=== OFFICE SETUP & MANAGEMENT TOOL ===" -ForegroundColor Cyan
 Write-Host "1 - Download Only      (Sadece indir)" -ForegroundColor Yellow
 Write-Host "2 - Download & Install (Sadece indir kur)" -ForegroundColor Yellow
 Write-Host "3 - Uninstall Only     (Sadece kaldir)" -ForegroundColor Yellow
-Write-Host "4 - Clean Install      (Eskisi varsa kaldir yenisini indir kur)" -ForegroundColor Yellow
+Write-Host "4 - Clean Install      (Temiz kurulum - Eskisini kaldir ve kur)" -ForegroundColor Yellow
+Write-Host "5 - Activate Only      (Sadece etkinlestir)" -ForegroundColor Yellow
 Write-Host ""
 
-$islem = Read-Host "Select Option / Islem Secin (1, 2, 3, 4)"
+$islem = Read-Host "Select Option / Islem Secin (1, 2, 3, 4, 5)"
 
-if ($islem -notin @("1", "2", "3", "4")) {
-    Write-Host "Invalid selection / Gecersiz secim yaptiniz. (1, 2, 3, 4)" -ForegroundColor Red
+if ($islem -notin @("1", "2", "3", "4", "5")) {
+    Write-Host "Invalid selection / Gecersiz secim yaptiniz. (1, 2, 3, 4, 5)" -ForegroundColor Red
+    exit
+}
+
+if ($islem -eq "5") {
+    Etkinlestir-Office
     exit
 }
 
@@ -109,18 +137,8 @@ if ($islem -eq "1") {
 
 if ($islem -in @("2", "4")) {
     Write-Host ""
-    Write-Host "=== ACTIVATION / ETKINLESTIRME ===" -ForegroundColor Cyan
     $etkinlestir = Read-Host "Activate with Product Key / Urun anahtari ile etkinlestir? (E / H)"
     if ($etkinlestir -in @("E", "e", "Y", "y")) {
-        $key = Read-Host "Enter 25-character Product Key / 25 haneli urun anahtarini girin (XXXXX-XXXXX-XXXXX-XXXXX-XXXXX)"
-        $osppPath = "C:\Program Files\Microsoft Office\Office16\ospp.vbs"
-        if (Test-Path $osppPath) {
-            Write-Host "Installing product key / Urun anahtari yukleniyor..." -ForegroundColor Cyan
-            cscript //nologo $osppPath /inpkey:$key
-            Write-Host "Activating Office online / Cevrimici etkinlestiriliyor..." -ForegroundColor Cyan
-            cscript //nologo $osppPath /act
-        } else {
-            Write-Host "ospp.vbs not found / Etkinlestirme araci bulunamadi." -ForegroundColor Red
-        }
+        Etkinlestir-Office
     }
 }
