@@ -65,45 +65,34 @@ if ($islem -in @("1", "2", "4")) {
 New-Item -ItemType Directory -Force -Path "C:\Office" | Out-Null
 Set-Location "C:\Office"
 
-Write-Host "Downloading Office Deployment Tool (ODT) / Kurulum araci indiriliyor..." -ForegroundColor Cyan
+Write-Host "Preparing Office Deployment Tool (ODT) / Kurulum araci hazirlaniyor..." -ForegroundColor Cyan
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$odtUrls = @(
-    "https://microsoft.com",
-    "https://microsoft.com",
-    "https://microsoft.com"
-)
-
-$indirildi = $false
-foreach ($url in $odtUrls) {
-    try {
-        Invoke-WebRequest -Uri $url -OutFile "C:\Office\odt.exe" -UseBasicParsing -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -ErrorAction Stop
-        if (Test-Path "C:\Office\odt.exe") {
-            $bytes = [System.IO.File]::ReadAllBytes("C:\Office\odt.exe")
-            if ($bytes.Length -gt 1000000 -and $bytes[0] -eq 77 -and $bytes[1] -eq 90) {
-                $indirildi = $true
-                break
-            }
-        }
-    } catch {}
-}
-
-if (-not $indirildi) {
-    Write-Host "Trying Winget / Winget ile arac indiriliyor..." -ForegroundColor Yellow
-    if (Get-Command winget -ErrorAction SilentlyContinue) {
-        winget install --id Microsoft.OfficeDeploymentTool --accept-source-agreements --accept-package-agreements --silent
-        $wingetSetup = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter "setup.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($wingetSetup) {
-            Copy-Item $wingetSetup.FullName -Destination "C:\Office\setup.exe" -Force
-            $indirildi = $true
-        }
-    }
-} else {
-    Start-Process -FilePath "C:\Office\odt.exe" -ArgumentList "/quiet /extract:C:\Office" -Wait
+if (Test-Path "$env:ProgramFiles\OfficeDeploymentTool\setup.exe") {
+    Copy-Item "$env:ProgramFiles\OfficeDeploymentTool\setup.exe" -Destination "C:\Office\setup.exe" -Force
+} elseif (Test-Path "${env:ProgramFiles(x86)}\OfficeDeploymentTool\setup.exe") {
+    Copy-Item "${env:ProgramFiles(x86)}\OfficeDeploymentTool\setup.exe" -Destination "C:\Office\setup.exe" -Force
 }
 
 if (-not (Test-Path "C:\Office\setup.exe")) {
-    Write-Host "ERROR: setup.exe could not be downloaded! / HATA: Kurulum araci indirilemedi!" -ForegroundColor Red
+    $odtUrl = "https://microsoft.com"
+    try {
+        Invoke-WebRequest -Uri $odtUrl -OutFile "C:\Office\odt.exe" -UseBasicParsing -UserAgent "Mozilla/5.0" -ErrorAction Stop
+        Start-Process -FilePath "C:\Office\odt.exe" -ArgumentList "/quiet /extract:C:\Office" -Wait
+    } catch {}
+}
+
+if (-not (Test-Path "C:\Office\setup.exe")) {
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        winget install --id Microsoft.OfficeDeploymentTool --accept-source-agreements --accept-package-agreements --silent
+        if (Test-Path "$env:ProgramFiles\OfficeDeploymentTool\setup.exe") {
+            Copy-Item "$env:ProgramFiles\OfficeDeploymentTool\setup.exe" -Destination "C:\Office\setup.exe" -Force
+        }
+    }
+}
+
+if (-not (Test-Path "C:\Office\setup.exe")) {
+    Write-Host "ERROR: setup.exe could not be found! / HATA: Kurulum araci hazirlanamadi!" -ForegroundColor Red
     Read-Host "Press Enter to exit / Cikmak icin Enter'a basin"
     return
 }
