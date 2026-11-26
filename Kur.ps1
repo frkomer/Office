@@ -57,9 +57,43 @@ if ($islem -in @("1", "2", "4")) {
 New-Item -ItemType Directory -Force -Path "C:\Office" | Out-Null
 Set-Location "C:\Office"
 
-Write-Host "Downloading Office Setup Engine / Kurulum motoru indiriliyor..." -ForegroundColor Cyan
+Write-Host "Preparing Office Deployment Tool (ODT) / Kurulum araci hazirlaniyor..." -ForegroundColor Cyan
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-Invoke-WebRequest -Uri "https://microsoft.com" -OutFile "C:\Office\setup.exe" -UseBasicParsing
+
+$odtUrls = @(
+    "https://microsoft.com",
+    "https://microsoft.com",
+    "https://microsoft.com"
+)
+
+$indirildi = $false
+foreach ($url in $odtUrls) {
+    try {
+        Invoke-WebRequest -Uri $url -OutFile "C:\Office\odt.exe" -UseBasicParsing -UserAgent "Mozilla/5.0" -ErrorAction Stop
+        $bytes = [System.IO.File]::ReadAllBytes("C:\Office\odt.exe")
+        if ($bytes.Length -gt 1000000 -and $bytes[0] -eq 77 -and $bytes[1] -eq 90) {
+            $indirildi = $true
+            break
+        }
+    } catch {}
+}
+
+if (-not $indirildi) {
+    Write-Host "Trying Winget fallback / Winget ile arac indiriliyor..." -ForegroundColor Yellow
+    winget install --id Microsoft.OfficeDeploymentTool --accept-source-agreements --accept-package-agreements --silent | Out-Null
+    $wingetSetup = Get-ChildItem -Path "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Filter "setup.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($wingetSetup) {
+        Copy-Item $wingetSetup.FullName -Destination "C:\Office\setup.exe" -Force
+        $indirildi = $true
+    }
+} else {
+    Start-Process -FilePath "C:\Office\odt.exe" -ArgumentList "/quiet /extract:C:\Office" -Wait
+}
+
+if (-not (Test-Path "C:\Office\setup.exe")) {
+    Write-Host "ERROR: setup.exe could not be downloaded. Check internet connection. / HATA: Kurulum araci indirilemedi." -ForegroundColor Red
+    exit
+}
 
 $kaldirXml = @"
 <Configuration>
